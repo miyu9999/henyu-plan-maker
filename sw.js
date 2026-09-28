@@ -1,5 +1,5 @@
 const CACHE_PREFIX = 'henyu-plan-maker-';
-const CACHE_NAME = CACHE_PREFIX + 'v2';
+const CACHE_NAME = CACHE_PREFIX + 'v3';
 const APP_SHELL = ['./', './index.html', './engine.js', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
