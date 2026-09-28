@@ -1,0 +1,1631 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>医学部編入 逆算計画（仮）</title>
+<meta name="theme-color" content="#0a0c10" />
+<link rel="manifest" href="manifest.json" />
+<link rel="icon" href="favicon-32.png" sizes="32x32" />
+<link rel="apple-touch-icon" href="apple-touch-icon.png" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" />
+<style>
+  :root {
+    --bg: #0a0c10;
+    --panel: #12151a;
+    --panel2: #171b22;
+    --line: rgba(255,255,255,.14);
+    --text: #e7e9ec;
+    --text-dim: #838a95;
+    --accent: #39e0c9;
+    --accent-ink: #06322c;
+    --ok: #4ade80;
+    --tight: #f5b942;
+    --ng: #ff5f5f;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --display: 'Big Shoulders Display', sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    background-image: repeating-linear-gradient(0deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 3px);
+  }
+  input[type=checkbox] { accent-color: var(--accent); width: 18px; height: 18px; }
+  ::selection { background: color-mix(in srgb, var(--accent) 40%, transparent); }
+  @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+
+  /* ── ヘッダー ── */
+  header.app-header {
+    position: sticky; top: 0; z-index: 5; background: var(--panel); border-bottom: 1px solid var(--line);
+    padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  header.app-header .logo {
+    display: flex; align-items: baseline; gap: 2px; font-family: var(--display); font-weight: 700;
+    font-size: 20px; letter-spacing: .01em; white-space: nowrap;
+  }
+  header.app-header .logo .mark { color: var(--accent); }
+  header.app-header .logo .tag { color: var(--text-dim); font-size: 13px; }
+  header.app-header .logo .dot {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-left: 8px;
+    animation: pulse-dot 1.8s ease-in-out infinite; flex: none;
+  }
+  header.app-header .status {
+    font-size: 10px; color: var(--text-dim); letter-spacing: .06em; text-align: right;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+
+  main { max-width: 640px; margin: 0 auto; padding: 20px 16px 110px; }
+  .screen { animation: rise .25s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  .page-title { font-family: var(--display); font-weight: 700; font-size: 24px; margin-bottom: 4px; }
+  .page-desc { font-size: 12px; color: var(--text-dim); line-height: 1.7; margin-bottom: 18px; }
+
+  /* ── corner bracket（装飾） ── */
+  .corners { position: relative; }
+  .corner { position: absolute; width: 14px; height: 14px; pointer-events: none; }
+  .corner-tl { top: -1px; left: -1px; border-top: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  .corner-tr { top: -1px; right: -1px; border-top: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+  .corner-bl { bottom: -1px; left: -1px; border-bottom: 2px solid var(--accent); border-left: 2px solid var(--accent); }
+  .corner-br { bottom: -1px; right: -1px; border-bottom: 2px solid var(--accent); border-right: 2px solid var(--accent); }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 0;
+    padding: 18px 20px; margin-bottom: 16px; position: relative;
+  }
+  .card h2 {
+    font-family: var(--display); font-weight: 700; font-size: 15px; letter-spacing: .04em;
+    margin-bottom: 14px; color: var(--accent); text-transform: none;
+  }
+  .card h2::before { content: '> '; }
+  .field { margin-bottom: 16px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label.field-label {
+    display: block; font-size: 10.5px; color: var(--text-dim); letter-spacing: .06em; margin-bottom: 6px;
+  }
+
+  .seg { display: flex; border: 1px solid var(--line); }
+  .seg button {
+    flex: 1; padding: 10px 8px; border: 0; background: transparent; color: var(--text);
+    font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--mono);
+  }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button.active { background: var(--accent); color: var(--accent-ink); }
+
+  input[type=text], input[type=number], input[type=date], select {
+    width: 100%; padding: 10px 12px; border-radius: 0; border: 1px solid var(--line);
+    font-size: 13px; font-family: var(--mono); background: var(--bg); color: var(--text);
+  }
+  input:focus, select:focus { outline: none; border-color: var(--accent); }
+
+  .subject-row {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+  }
+  .subject-row:last-child { border-bottom: 0; }
+  .subject-row .name { flex: 0 0 74px; font-size: 13px; font-weight: 600; }
+  .row-controls { flex: 1; display: flex; align-items: center; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+  .include-toggle { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .include-toggle input { width: 15px; height: 15px; }
+  .english-type-select { width: auto !important; padding: 7px 8px !important; font-size: 11px !important; flex: none; }
+  .level-seg { flex: 1; min-width: 180px; }
+  .level-seg button { padding: 8px 4px; font-size: 11px; }
+
+  .btn-primary {
+    width: 100%; padding: 14px; border-radius: 0; border: 1px solid var(--accent); background: var(--accent);
+    color: var(--accent-ink); font-size: 13px; font-weight: 700; letter-spacing: .06em; cursor: pointer;
+    font-family: var(--mono); margin-top: 4px;
+  }
+  .btn-primary:hover { filter: brightness(1.08); }
+  .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+  .btn-secondary {
+    width: 100%; padding: 12px; border-radius: 0; border: 1px solid var(--line); background: transparent;
+    color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; font-family: var(--mono); margin-top: 10px;
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-link {
+    display: block; width: 100%; text-align: center; padding: 10px; border: 0; background: transparent;
+    color: var(--text-dim); font-size: 11px; font-family: var(--mono); cursor: pointer; margin-top: 8px; letter-spacing: .04em;
+  }
+  .btn-link:hover { color: var(--accent); }
+
+  .hint { font-size: 10.5px; color: var(--text-dim); margin-top: 6px; line-height: 1.6; }
+  .hidden { display: none !important; }
+
+  .disclaimer {
+    font-size: 10.5px; color: var(--text-dim); line-height: 1.7; margin-bottom: 16px;
+    border-left: 2px solid var(--line); padding-left: 10px;
+  }
+
+  .result-header { text-align: center; margin-bottom: 18px; }
+  .result-header .school { font-size: 11px; color: var(--text-dim); letter-spacing: .04em; }
+  .result-header .title { font-family: var(--display); font-weight: 700; font-size: 22px; margin-top: 4px; }
+  .result-header .meta { font-size: 10.5px; color: var(--text-dim); margin-top: 6px; letter-spacing: .04em; }
+
+  .section-label {
+    font-size: 11px; color: var(--accent); letter-spacing: .12em; margin: 22px 0 10px;
+  }
+  .section-label::before { content: '> '; }
+  .section-label:first-child { margin-top: 0; }
+
+  /* 実現可能性パネル */
+  .verdict { border: 1px solid var(--line); background: var(--panel); padding: 16px 18px; margin-bottom: 18px; border-left: 3px solid var(--line); }
+  .verdict.ok { border-left-color: var(--ok); }
+  .verdict.tight { border-left-color: var(--tight); }
+  .verdict.ng { border-left-color: var(--ng); }
+  .verdict .v-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .verdict .v-head svg { flex: none; }
+  .verdict.ok .v-head svg { stroke: var(--ok); }
+  .verdict.tight .v-head svg { stroke: var(--tight); }
+  .verdict.ng .v-head svg { stroke: var(--ng); }
+  .verdict .v-title { font-size: 12px; letter-spacing: .1em; font-weight: 700; }
+  .verdict.ok .v-title { color: var(--ok); }
+  .verdict.tight .v-title { color: var(--tight); }
+  .verdict.ng .v-title { color: var(--ng); }
+  .verdict .v-body { font-size: 12.5px; color: var(--text-dim); line-height: 1.7; margin-bottom: 4px; }
+  .verdict .v-nums { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .verdict .v-nums > span { display: block; }
+  .verdict .v-nums .n-label { font-size: 9.5px; color: var(--text-dim); letter-spacing: .06em; margin-bottom: 2px; }
+  .verdict .v-nums .n-val { font-size: 17px; font-weight: 700; font-family: var(--mono); }
+  .verdict .v-sub { font-size: 10.5px; color: var(--text-dim); margin-top: 10px; }
+
+  /* リスト1 */
+  .subject-block { background: var(--panel); border: 1px solid var(--line); padding: 16px 18px; margin-bottom: 12px; }
+  .subject-block .sb-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+    padding-bottom: 8px; margin-bottom: 6px; border-bottom: 1px solid var(--line);
+  }
+  .subject-block .sb-name { font-family: var(--display); font-weight: 700; font-size: 17px; }
+  .subject-block .sb-meta { font-size: 9.5px; color: var(--text-dim); text-align: right; }
+  .book-line { display: flex; align-items: baseline; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--line); flex-wrap: wrap; }
+  .book-line:last-child { border-bottom: 0; }
+  .band-tag { flex: none; font-size: 9.5px; font-weight: 700; color: var(--accent); }
+  .band-tag::before { content: '［'; }
+  .band-tag::after { content: '］'; }
+  .book-line .b-title { flex: 1 1 140px; font-size: 12.5px; }
+  .book-line .b-amount { font-size: 10px; color: var(--text-dim); white-space: nowrap; }
+  .book-line .b-span { font-size: 10px; color: var(--text); white-space: nowrap; }
+
+  /* 日毎カレンダー */
+  .week-card { border: 1px solid var(--line); margin-bottom: 8px; }
+  .week-head {
+    width: 100%; text-align: left; border: 0; background: var(--panel2); padding: 11px 16px; cursor: pointer;
+    font-family: var(--mono); font-size: 12px; color: var(--text); display: flex; justify-content: space-between; gap: 8px;
+  }
+  .week-head:hover { color: var(--accent); }
+  .week-head .w-load { font-size: 10px; color: var(--text-dim); font-weight: 600; }
+  .day-row { padding: 10px 16px; border-top: 1px solid var(--line); background: var(--panel); }
+  .day-date { font-size: 10px; font-weight: 700; color: var(--text-dim); margin-bottom: 4px; }
+  .day-tasks { display: flex; flex-direction: column; gap: 3px; }
+  .task { font-size: 12px; line-height: 1.7; display: flex; gap: 6px; align-items: baseline; }
+  .task .t-sub { flex: 0 0 4.6em; font-weight: 700; color: var(--accent); }
+  .task .t-items { flex: 1; display: flex; flex-direction: column; gap: 1px; }
+  .track-label {
+    font-size: 10.5px; font-weight: 700; color: var(--text-dim); margin: 8px 0 6px;
+    padding-left: 8px; border-left: 2px solid var(--line);
+  }
+  .t-review { color: var(--text-dim); }
+  .day-done { font-size: 11.5px; color: var(--text-dim); }
+
+  /* 週の進め方 */
+  .pace-input { width: 42px !important; padding: 5px !important; text-align: center; margin: 0 4px; }
+
+  /* ── 今日やること ── */
+  .today-hero { background: var(--panel); border: 1px solid var(--line); padding: 22px 20px; margin-bottom: 16px; }
+  .today-hero .dday { font-size: 11px; color: var(--accent); letter-spacing: .12em; margin-bottom: 10px; }
+  .today-hero .bigdate {
+    font-family: var(--mono); font-weight: 700; font-size: 38px; letter-spacing: -.01em;
+    text-shadow: 0 0 18px color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+  .today-hero .bigdate .dow { font-size: 18px; color: var(--text-dim); margin-left: 4px; }
+  .seg-bar { display: flex; gap: 3px; margin-top: 16px; }
+  .seg-bar .seg-cell { flex: 1; height: 12px; background: var(--line); }
+  .seg-bar .seg-cell.filled { background: var(--accent); }
+  .seg-meta { display: flex; justify-content: space-between; margin-top: 8px; font-size: 9.5px; color: var(--text-dim); letter-spacing: .06em; }
+
+  .today-row { display: flex; gap: 12px; align-items: flex-start; padding: 13px 0; border-bottom: 1px solid var(--line); }
+  .today-row:last-child { border-bottom: 0; }
+  .today-row.done { opacity: .4; }
+  .today-row.done .today-task { text-decoration: line-through; }
+  .today-check input { width: 20px; height: 20px; margin-top: 2px; }
+  .today-main { flex: 1; min-width: 0; }
+  .today-subject { font-size: 11px; color: var(--accent); letter-spacing: .04em; margin-bottom: 3px; }
+  .today-subject::before { content: '［'; }
+  .today-subject::after { content: '］'; }
+  .today-task { font-size: 13px; line-height: 1.6; }
+
+  .auto-note {
+    background: var(--panel2); border: 1px solid var(--line); padding: 11px 13px; font-size: 11px;
+    line-height: 1.7; color: var(--text-dim); margin-bottom: 14px;
+  }
+  .auto-note b { color: var(--text); }
+
+  /* 参考書リスト編集 */
+  .editor-line { display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-bottom: 1px dashed var(--line); }
+  .editor-line:last-child { border-bottom: 0; }
+  .editor-check input { width: 17px; height: 17px; margin-top: 3px; }
+  .editor-main { flex: 1; min-width: 0; }
+  .editor-title { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 13px; }
+  .tiny-tag { font-size: 9.5px; font-weight: 700; padding: 1px 6px; border: 1px solid var(--line); color: var(--text-dim); }
+  .editor-amount { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; font-size: 10.5px; color: var(--text-dim); margin-top: 6px; }
+  .editor-amount input { width: 56px !important; padding: 5px !important; text-align: center; font-size: 11px !important; }
+  .ed-sep { margin-left: 4px; }
+  .add-book-btn {
+    margin-top: 10px; padding: 7px 12px; border: 1px dashed var(--line); background: transparent;
+    color: var(--text-dim); font-family: var(--mono); font-size: 11px; cursor: pointer;
+  }
+  .add-book-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .add-book-form { margin-top: 10px; padding: 12px; background: var(--bg); border: 1px solid var(--line); }
+  .add-book-form input, .add-book-form select { margin-bottom: 6px; font-size: 12px !important; }
+  .nb-row { display: flex; gap: 6px; }
+  .nb-add {
+    flex: none; padding: 9px 16px; border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+    font-family: var(--mono); font-size: 11.5px; font-weight: 700; cursor: pointer; margin-bottom: 6px;
+  }
+
+  /* ── フォーム：ステップウィザード ── */
+  .step-tabs { display: flex; border-bottom: 1px solid var(--line); margin-bottom: 20px; overflow-x: auto; }
+  .step-tabs button {
+    flex: 1; min-width: 88px; padding: 10px 4px; border: 0; border-bottom: 2px solid transparent;
+    background: transparent; font-family: var(--mono); font-size: 10.5px; color: var(--text-dim);
+    cursor: pointer; white-space: nowrap;
+  }
+  .step-tabs button.active { border-bottom-color: var(--accent); color: var(--accent); }
+  .form-step { display: none; }
+  .form-step.active { display: block; }
+  .form-nav { display: flex; gap: 10px; margin-top: 22px; }
+  .form-nav .btn-secondary, .form-nav .btn-primary { margin-top: 0; }
+  .form-nav .btn-secondary { flex: 1; }
+  .form-nav .btn-primary { flex: 2; }
+
+  /* ── ボトムナビ ── */
+  nav.bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--line); z-index: 5;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  nav.bottom-nav .nav-row { max-width: 640px; margin: 0 auto; display: flex; justify-content: space-around; }
+  nav.bottom-nav button {
+    flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 9px 4px;
+    border: 0; border-top: 2px solid transparent; background: transparent; cursor: pointer;
+    font-family: var(--mono); font-size: 9px; letter-spacing: .03em; color: var(--text-dim);
+  }
+  nav.bottom-nav button.active { border-top-color: var(--accent); color: var(--accent); }
+  nav.bottom-nav svg { flex: none; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-dim); }
+  .empty-state .es-title { font-family: var(--display); font-size: 18px; color: var(--text); margin-bottom: 8px; }
+  .empty-state .es-body { font-size: 12px; line-height: 1.7; margin-bottom: 20px; }
+</style>
+<script data-goatcounter="https://miyu9999.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <span class="logo"><span class="mark">▍</span>編入計画<span class="tag">（仮）</span><span class="dot"></span></span>
+  <span class="status" id="header-status">条件を入力してください</span>
+</header>
+
+<main>
+  <section id="screen-today" class="screen hidden">
+    <div class="today-hero corners">
+      <span class="corner corner-tl"></span><span class="corner corner-tr"></span>
+      <span class="corner corner-bl"></span><span class="corner corner-br"></span>
+      <div class="dday" id="today-dday"></div>
+      <div class="bigdate" id="today-bigdate"></div>
+      <div class="seg-bar" id="today-segbar"></div>
+      <div class="seg-meta" id="today-segmeta"></div>
+    </div>
+    <div id="today-progress"></div>
+    <div class="card">
+      <h2>TODAY_TASKS</h2>
+      <div class="hint" style="margin-top:0;margin-bottom:14px">終わったらチェックを入れてください。</div>
+      <div id="today-tasks"></div>
+    </div>
+    <button class="btn-primary" id="btn-share">SHARE_TODAY_CARD →</button>
+    <button class="btn-secondary" id="btn-view-plan">VIEW_FULL_PLAN</button>
+    <button class="btn-link" id="btn-reschedule">遅れた分を今日から組み直す</button>
+  </section>
+
+  <section id="screen-form" class="screen hidden">
+    <div class="page-title">条件を入力</div>
+    <div class="step-tabs" id="form-step-tabs"></div>
+
+    <div class="form-step" data-step="0">
+      <div class="card">
+        <div class="field">
+          <label class="field-label">大学（医学部学士編入）</label>
+          <select id="school-select"></select>
+        </div>
+        <div class="field hidden" id="school-free-field">
+          <label class="field-label">志望校名（記録用）</label>
+          <input type="text" id="school-input" placeholder="例：〇〇大学医学部" />
+          <div class="hint">「科目」の画面で、出題される科目を自分で選んでください。</div>
+        </div>
+        <div class="auto-note hidden" id="school-info"></div>
+      </div>
+    </div>
+
+    <div class="form-step" data-step="1">
+      <div class="card">
+        <div class="field">
+          <label class="field-label">入力方法</label>
+          <div class="seg" id="period-mode-seg">
+            <button type="button" data-val="date" class="active">試験日から計算</button>
+            <button type="button" data-val="weeks">週数を直接入力</button>
+          </div>
+        </div>
+        <div class="field" id="period-date-field">
+          <label class="field-label">試験日</label>
+          <input type="date" id="exam-date-input" />
+        </div>
+        <div class="field hidden" id="period-weeks-field">
+          <label class="field-label">残り週数</label>
+          <input type="number" id="weeks-input" min="1" max="104" placeholder="例：24" />
+        </div>
+        <div class="hint" id="period-hint"></div>
+        <div class="field" style="margin-top:18px">
+          <label class="field-label">1日に確保できる勉強時間（時間）</label>
+          <input type="number" id="hours-input" min="0.5" max="16" step="0.5" value="5" />
+          <div class="hint">この時間で参考書が終わるかどうかを判定します。</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-step" data-step="2">
+      <div class="card">
+        <div class="field" id="level-category-field">
+          <label class="field-label">生命科学を中心に、今の状態に近いものを選んでください</label>
+          <div class="seg" id="level-category-seg" style="flex-direction: column;">
+            <button type="button" data-val="blank" class="active">白紙に近い（これから基礎から）</button>
+            <button type="button" data-val="shaky">基礎は触ったが抜け漏れが多い</button>
+            <button type="button" data-val="ok">基礎はできる（応用に穴がある）</button>
+            <button type="button" data-val="applied">応用・過去問演習ができる</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-step" data-step="3">
+      <div class="card">
+        <div class="hint" style="margin-top:0;margin-bottom:14px" id="subject-mode-hint"></div>
+        <div id="subject-list"></div>
+        <div class="hint">「含める」を外した科目は計画から外れます。小論文・面接は回数（週1本の答案・月1回の模擬面接など）で計画に入ります。</div>
+      </div>
+    </div>
+
+    <div class="form-step" data-step="4">
+      <div class="card">
+        <div class="hint" style="margin-top:0;margin-bottom:14px">1週間のうち何日を「参考書を進める日」に、何日を「復習日」に充てるかを決めます。「4日進んで2日復習・1日予備」が既定値です。</div>
+        <div id="pace-list"></div>
+      </div>
+    </div>
+
+    <div class="form-nav">
+      <button class="btn-secondary" id="btn-form-prev">戻る</button>
+      <button class="btn-primary" id="btn-form-next">次へ →</button>
+    </div>
+    <button class="btn-link hidden" id="btn-new-plan">今の計画を破棄して最初からやり直す</button>
+  </section>
+
+  <section id="screen-books" class="screen hidden">
+    <div class="result-header">
+      <div class="title">やるべき参考書</div>
+      <div class="meta" id="books-meta"></div>
+    </div>
+    <div class="hint" style="margin-bottom:14px">志望校の出題科目と今のレベルから自動で選びました。使わない本はチェックを外し、手持ちの本は「追加」から入れてください。分量は実物に合わせて調整できます。</div>
+    <div id="book-editor"></div>
+    <button class="btn-primary" id="btn-generate">BUILD_PLAN →</button>
+    <button class="btn-secondary" id="btn-back-form">条件を変える</button>
+  </section>
+
+  <section id="screen-result" class="screen hidden">
+    <div class="disclaimer">本ツールが出す計画はあくまで目安であり、合格を保証するものではありません。参考書の分量・所要時間は概算値なので、実物に合わせて調整してください。</div>
+    <div class="result-header">
+      <div class="school" id="result-school"></div>
+      <div class="title">合格までの逆算計画</div>
+      <div class="meta" id="result-meta"></div>
+    </div>
+
+    <div id="verdict-wrap"></div>
+
+    <div class="section-label">BOOK_LIST</div>
+    <div id="book-list"></div>
+
+    <div class="section-label">DAILY_LOG</div>
+    <div class="hint" style="margin-top:0;margin-bottom:14px" id="calendar-hint"></div>
+    <div id="calendar"></div>
+
+    <button class="btn-primary" id="btn-to-today" style="margin-top:16px">BACK_TO_TODAY</button>
+    <button class="btn-secondary" id="btn-back-books">参考書を選び直す</button>
+  </section>
+</main>
+
+<nav class="bottom-nav">
+  <div class="nav-row">
+    <button type="button" id="nav-today" data-nav="today">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 13h3l2-7 4 15 3-10 2 6h6"/></svg>
+      <span>今日</span>
+    </button>
+    <button type="button" id="nav-result" data-nav="result">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="18" x2="3" y2="10"/><line x1="9" y1="18" x2="9" y2="5"/><line x1="15" y1="18" x2="15" y2="12"/><line x1="21" y1="18" x2="21" y2="8"/></svg>
+      <span>計画</span>
+    </button>
+    <button type="button" id="nav-books" data-nav="books">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m12 3-9.5 5L12 13l9.5-5L12 3Z"/><path d="m2.5 13.5 9.5 5 9.5-5"/></svg>
+      <span>参考書</span>
+    </button>
+    <button type="button" id="nav-form" data-nav="form">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><line x1="12" y1="1" x2="12" y2="4.5"/><line x1="12" y1="19.5" x2="12" y2="23"/><line x1="1" y1="12" x2="4.5" y2="12"/><line x1="19.5" y1="12" x2="23" y2="12"/></svg>
+      <span>条件</span>
+    </button>
+  </div>
+</nav>
+
+<script src="engine.js"></script>
+<script>
+  // ═══════════════════════════════════════════════════════════
+  // 状態
+  // ═══════════════════════════════════════════════════════════
+  const state = {
+    school: '',
+    periodMode: 'date',
+    examDate: '',
+    weeksDirect: null,
+    hoursPerDay: 5,
+    overallCategory: 'blank',
+    subjectIncluded: { life: true, english: false, math: false, chem: false, phys: false, essay: false, interview: true },
+    englishType: 'toeic',  // 'toeic' | 'toefl' | 'written'（筆記試験）
+    targets: {},           // 志望校の出題の重さから決めた、科目ごとの到達レベル帯
+    subjectCategory: { life: 'normal', english: 'normal', math: 'normal', chem: 'normal', phys: 'normal' },
+    // 科目ごとの週の進め方（4日進んで2日復習・1日予備が既定）
+    subjectPace: {},
+    bookSelection: null, // 参考書リスト編集画面で確定した内容
+    planStart: null,     // 計画の起点日（YYYY-MM-DD）。保存した計画を開き直しても日付がずれないように持つ
+    examDateAbs: null,   // 本番日（YYYY-MM-DD）。週数入力の場合も絶対日付に変換して保存する
+    progress: {},        // { 'YYYY-MM-DD': { 科目キー: true } } 実際にやった記録
+    doneMap: {},         // { '科目キー::教材名（n周目）': 消化済みの量 } リスケジュール時に差し引く
+  };
+  const STORAGE_KEY = 'henyu-plan-maker-v1';
+  const DEFAULT_PACE = { advance: 4, review: 2 };
+
+  const $ = (id) => document.getElementById(id);
+
+  const SUBJECT_META = {
+    life:      { label: '生命科学' },
+    english:   { label: '英語' },
+    math:      { label: '数学' },
+    chem:      { label: '化学' },
+    phys:      { label: '物理' },
+    // 小論文・面接：教材の総量から逆算できないので、答案作成・模擬面接の「回数」を教材扱いにして日割りに乗せる
+    essay:     { label: '小論文', noLevel: true, noPastExam: true },
+    interview: { label: '面接',   noLevel: true, noPastExam: true },
+  };
+
+  // ═══════════════════════════════════════════════════════════
+  // 参考書データ（1冊ずつ個別に持つ）
+  //   band : 0=高校範囲 1=大学入門・入試標準 2=編入標準（大学教養） 3=発展（大学院入試レベル）
+  //   units: 総量 / unitLabel: 単位 / min: 1単位あたりの所要時間（分）
+  //   出典：医学部学士編入の合格体験記・予備校コラム（2026-09確認）で定番とされる教材から構成。
+  //   分量・所要時間は目安（版によって変わるため、実物に合わせて調整する前提）
+  // ═══════════════════════════════════════════════════════════
+  const BAND_LABEL = ['高校範囲', '入門', '編入標準', '発展'];
+
+  // track: 'memorize' = 毎日並行で進める（単語帳、週1本の答案など。全期間にわたって触る）
+  //        'main'     = 順番に積み上げるメインライン（1冊ずつ仕上げて次へ）
+  // cycles: 周回前提の教材。2周目以降は所要時間を6割で見積もる
+  const BOOK_DB = {
+    life: [
+      { title: '理解しやすい生物（生物基礎収録版）', units: 25, unitLabel: '章', min: 40, band: 0, track: 'main' },
+      { title: 'マンガでわかる免疫学', units: 7, unitLabel: '章', min: 30, band: 1, track: 'main' },
+      { title: 'シンプル生化学', units: 20, unitLabel: '章', min: 45, band: 1, track: 'main' },
+      { title: 'シンプル生理学', units: 20, unitLabel: '章', min: 45, band: 1, track: 'main' },
+      { title: 'はじめの一歩の生化学・分子生物学', units: 16, unitLabel: '章', min: 50, band: 1, track: 'main' },
+      { title: 'Essential細胞生物学', units: 20, unitLabel: '章', min: 90, band: 2, track: 'main', cycles: 2 },
+      { title: '医学部編入への生命科学演習', units: 12, unitLabel: '章', min: 90, band: 2, track: 'main', cycles: 2 },
+    ],
+    // 単語帳はレベルに関係なく使うので「入門」に置く（基礎を飛ばす人からも外れないように）
+    english_toeic: [
+      { title: 'TOEIC L&R TEST 出る単特急 金のフレーズ', units: 1000, unitLabel: '語', min: 1, band: 1, track: 'memorize', cycles: 3 },
+      { title: 'TOEIC L&Rテスト 文法問題 でる1000問', units: 1000, unitLabel: '問', min: 2, band: 1, track: 'main', cycles: 2 },
+      { title: '公式TOEIC Listening & Reading 問題集', units: 2, unitLabel: '回分', min: 180, band: 2, track: 'main', cycles: 2 },
+    ],
+    english_toefl: [
+      { title: 'TOEFLテスト英単語3800', units: 3800, unitLabel: '語', min: 1, band: 1, track: 'memorize', cycles: 2 },
+      { title: '正解するTOEFL ITP TEST文法問題580問', units: 580, unitLabel: '問', min: 2, band: 1, track: 'main' },
+      { title: 'TOEFL iBT 公式問題集（ETS）', units: 4, unitLabel: '回分', min: 240, band: 2, track: 'main' },
+    ],
+    english_written: [
+      { title: '英単語ターゲット1900', units: 1900, unitLabel: '語', min: 1, band: 1, track: 'memorize', cycles: 3 },
+      { title: '関正生の英文法ポラリス1 標準レベル', units: 20, unitLabel: '章', min: 40, band: 0, track: 'main' },
+      { title: '入門英文問題精講', units: 40, unitLabel: '例題', min: 25, band: 1, track: 'main' },
+      { title: '英文解釈の技術100', units: 100, unitLabel: '例題', min: 20, band: 1, track: 'main' },
+      { title: '［国公立大］医学部の英語', units: 25, unitLabel: '題', min: 50, band: 2, track: 'main' },
+    ],
+    phys: [
+      { title: '宇宙一わかりやすい高校物理 力学・波動', units: 20, unitLabel: '章', min: 30, band: 0, track: 'main' },
+      { title: '物理のエッセンス 力学・波動', units: 20, unitLabel: '章', min: 40, band: 0, track: 'main' },
+      { title: '物理のエッセンス 熱・電磁気・原子', units: 20, unitLabel: '章', min: 40, band: 0, track: 'main' },
+      { title: '良問の風', units: 150, unitLabel: '問', min: 20, band: 1, track: 'main' },
+      { title: '力学キャンパス・ゼミ', units: 10, unitLabel: '講', min: 60, band: 2, track: 'main' },
+      { title: '演習しよう 力学', units: 100, unitLabel: '問', min: 30, band: 3, track: 'main' },
+    ],
+    chem: [
+      { title: '化学重要問題集 A問題', units: 200, unitLabel: '問', min: 15, band: 0, track: 'main' },
+      { title: '化学の新演習', units: 330, unitLabel: '問', min: 20, band: 1, track: 'main' },
+      { title: 'フレンドリー物理化学', units: 15, unitLabel: '章', min: 60, band: 2, track: 'main' },
+      { title: '単位が取れる有機化学ノート', units: 20, unitLabel: '講', min: 40, band: 2, track: 'main' },
+      { title: '演習で学ぶ 化学熱力学', units: 10, unitLabel: '章', min: 60, band: 2, track: 'main' },
+      { title: '物理化学演習：大学院入試問題から学ぶ', units: 100, unitLabel: '問', min: 40, band: 3, track: 'main' },
+      { title: '大学院をめざす人のための有機化学演習', units: 150, unitLabel: '問', min: 30, band: 3, track: 'main' },
+    ],
+    math: [
+      { title: '数学I・A 基礎問題精講', units: 145, unitLabel: '例題', min: 20, band: 0, track: 'main' },
+      { title: '数学II・B 基礎問題精講', units: 167, unitLabel: '例題', min: 20, band: 0, track: 'main' },
+      { title: '数学III・C 基礎問題精講', units: 116, unitLabel: '例題', min: 20, band: 1, track: 'main' },
+      { title: '微分積分キャンパス・ゼミ', units: 10, unitLabel: '講', min: 60, band: 2, track: 'main' },
+      { title: '線形代数キャンパス・ゼミ', units: 10, unitLabel: '講', min: 60, band: 2, track: 'main' },
+      { title: '単位が取れる統計ノート', units: 15, unitLabel: '講', min: 40, band: 2, track: 'main' },
+    ],
+  };
+
+  // 小論文・面接は本番までの期間から回数を決める（週1本の答案、月1回の模擬面接）
+  function practiceBooks(key) {
+    const totalDays = getTotalDays() || 180;
+    const weeks = Math.max(1, Math.floor(totalDays / 7));
+    const months = Math.max(1, Math.round(totalDays / 30));
+    if (key === 'essay') {
+      return [
+        { title: '医系小論文 最頻出論点20', units: 20, unitLabel: '論点', min: 45, band: 0, track: 'main' },
+        { title: '小論文の答案作成＋見直し（週1本）', units: weeks, unitLabel: '本', min: 90, band: 0, track: 'memorize' },
+      ];
+    }
+    return [
+      { title: '志望理由書の作成・推敲', units: 3, unitLabel: '稿', min: 120, band: 0, track: 'main' },
+      { title: '面接の想定問答づくり', units: 30, unitLabel: '問', min: 20, band: 0, track: 'main' },
+      { title: '模擬面接（月1回）', units: months, unitLabel: '回', min: 60, band: 0, track: 'memorize' },
+    ];
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 医学部学士編入の実施大学
+  //   出典：医学部学士編入塾Cell「2027年度医学部学士編入試験実施大学」（2026年実施試験）を主軸に、
+  //         河合塾KALS「医学部学士編入の実施大学一覧」で科目名・小論文の有無を補完（2026-09確認）。
+  //   ◎＝主要科目 ○＝出題あり △＝一部出題。english null＝英語の試験・スコア提出なし
+  //   情報源どうしで食い違う項目は note に書き、画面に注意を出す
+  // ═══════════════════════════════════════════════════════════
+  const ENGLISH_CONFLICT = '英語の扱い（筆記／スコア提出／なし）が情報源によって異なります';
+  const SCHOOL_DB = {
+    '旭川医科大学':   { kind: '国立', month: 10, english: 'written', subj: { life: '◎', chem: '△', math: '◎' }, essay: false },
+    '北海道大学':     { kind: '国立', month: 8,  english: 'toefl', englishNote: 'TOEFL（目安71点）', subj: { life: '◎', phys: '◎', chem: '◎', math: '◎' }, essay: true },
+    '弘前大学':       { kind: '国立', month: 11, english: 'toefl', subj: { life: '○', phys: '○', chem: '○', math: '○' }, essay: false },
+    '秋田大学':       { kind: '国立', month: 11, english: null, subj: { life: '◎', math: '○' }, essay: true },
+    '群馬大学':       { kind: '国立', month: 9,  english: 'toefl', subj: { life: '○', phys: '○', chem: '○' }, essay: true, note: '2026年実施の試験から科目が変更されています' },
+    '筑波大学':       { kind: '国立', month: 7,  english: 'written', subj: { life: '◎', chem: '○', math: '◎' }, essay: false, note: ENGLISH_CONFLICT },
+    '東京科学大学':   { kind: '国立', month: 6,  english: 'toefl', englishNote: 'TOEFL（目安80点）/IELTS', subj: { life: '△', math: '△' }, essay: false },
+    '浜松医科大学':   { kind: '国立', month: 8,  english: 'written', subj: { life: '◎', phys: '◎', chem: '◎' }, essay: true },
+    '名古屋大学':     { kind: '国立', month: 6,  english: 'toeic', englishNote: 'TOEFL/TOEIC', subj: { life: '◎', math: '◎' }, essay: true },
+    '富山大学':       { kind: '国立', month: 9,  english: 'written', subj: { life: '△', chem: '△', math: '△' }, essay: true },
+    '金沢大学':       { kind: '国立', month: 9,  english: 'toeic', englishNote: 'TOEFL/TOEIC', subj: { life: '◎', math: '△' }, essay: false },
+    '滋賀医科大学':   { kind: '国立', month: 9,  english: 'written', subj: { life: '◎', phys: '○', chem: '○', math: '◎' }, essay: true, note: ENGLISH_CONFLICT },
+    '大阪大学':       { kind: '国立', month: 7,  english: 'toeic', englishNote: 'TOEFL/TOEIC', subj: { life: '◎', phys: '◎', chem: '◎' }, essay: true, targetOverride: { phys: 3, chem: 3 }, note: '物理・化学は大学院入試レベルまで出題されるため、発展レベルまで積んでいます' },
+    '神戸大学':       { kind: '国立', month: 7,  english: 'written', subj: { life: '○', math: '△' }, essay: false, note: '生命科学と英語の総合問題形式。' + ENGLISH_CONFLICT },
+    '奈良県立医科大学': { kind: '公立', month: 1, english: 'written', subj: { life: '○', phys: '○', chem: '○', math: '○' }, essay: false, note: ENGLISH_CONFLICT },
+    '鳥取大学':       { kind: '国立', month: 9,  english: 'written', subj: { life: '◎', chem: '○' }, essay: false, note: ENGLISH_CONFLICT },
+    '島根大学':       { kind: '国立', month: 8,  english: 'toeic', englishNote: 'TOEIC（目安600点）', subj: { life: '◎', chem: '◎' }, essay: false },
+    '岡山大学':       { kind: '国立', month: 6,  english: 'toefl', englishNote: 'TOEFL（目安60点）', subj: { life: '◎' }, essay: true },
+    '山口大学':       { kind: '国立', month: 9,  english: null, subj: { life: '◎', phys: '○', chem: '○', math: '○' }, essay: true },
+    '香川大学':       { kind: '国立', month: 6,  english: 'toeic', englishNote: 'TOEIC（目安600点）', subj: { life: '◎', phys: '◎', chem: '◎' }, essay: false },
+    '愛媛大学':       { kind: '国立', month: 7,  english: null, subj: { life: '◎', phys: '○', chem: '○' }, essay: false },
+    '高知大学':       { kind: '国立', month: 2,  english: 'written', subj: { life: '○', phys: '○', chem: '○', math: '○' }, essay: false, note: '2026年実施から1年次後期編入に変更され、数学・理科（物理・化学・生物から2科目）・英語の試験になる予定です。' + ENGLISH_CONFLICT },
+    '大分大学':       { kind: '国立', month: 7,  english: 'written', subj: { life: '◎', chem: '△', math: '△' }, essay: false, note: ENGLISH_CONFLICT },
+    '長崎大学':       { kind: '国立', month: 8,  english: 'toeic', englishNote: 'TOEIC/TOEFL', subj: { life: '◎' }, essay: true },
+    '鹿児島大学':     { kind: '国立', month: 6,  english: 'toeic', englishNote: 'TOEIC（目安720点）', subj: { life: '◎', phys: '△', chem: '△', math: '△' }, essay: false },
+    '琉球大学':       { kind: '国立', month: 9,  english: 'toeic', englishNote: 'TOEIC（目安600点）', subj: { life: '◎' }, essay: true },
+    '東京医科大学':   { kind: '私立', month: 11, english: 'written', subj: { life: '○', phys: '○', chem: '○', math: '○' }, essay: true },
+  };
+  const ENGLISH_TYPE_LABEL = { toeic: 'TOEIC', toefl: 'TOEFL', written: '筆記試験' };
+
+  // 出題の重さ → 到達レベル帯。生命科学は主軸なので○でも編入標準まで積む
+  function targetFromMark(key, mark) {
+    if (key === 'life') return mark === '△' ? 1 : 2;
+    return { '◎': 2, '○': 1, '△': 0 }[mark];
+  }
+
+  // 仕上げの過去問演習。直前期に全科目まとめて充てる（編入の過去問は大学への請求や予備校経由で入手）
+  function pastExamBook(subjectLabel) {
+    return { title: `志望校の過去問演習（${subjectLabel}）`, units: 5, unitLabel: '年分', min: 120, band: 3, track: 'main', isPastExam: true };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // レベル判定
+  // ═══════════════════════════════════════════════════════════
+  const CATEGORY_SCORE = { blank: 35, shaky: 45, ok: 55, applied: 65 };
+  const CATEGORY_LABEL = {
+    blank: '白紙に近い（これから基礎から）',
+    shaky: '基礎は触ったが抜け漏れが多い',
+    ok: '基礎はできる（応用に穴がある）',
+    applied: '応用・過去問演習ができる',
+  };
+
+  function getSubjectAbsScore(key) {
+    const delta = { weak: -10, normal: 0, strong: 10 }[state.subjectCategory[key]] || 0;
+    return CATEGORY_SCORE[state.overallCategory] + delta;
+  }
+
+  // その科目で「どのレベルの教材から始めるか」。既にできている科目は基礎を飛ばす
+  function startBandFromAbsScore(abs) {
+    if (abs < 45) return 0;
+    if (abs < 55) return 1;
+    if (abs < 65) return 2;
+    return 3;
+  }
+
+  function targetBandFor(key) {
+    const t = state.targets[key];
+    return t != null ? t : 2;
+  }
+
+  function bookDbFor(key) {
+    if (key === 'essay' || key === 'interview') return practiceBooks(key);
+    if (key === 'english') return BOOK_DB[`english_${state.englishType}`];
+    return BOOK_DB[key];
+  }
+
+  function booksForSubject(key, absScore) {
+    const db = bookDbFor(key);
+    if (!db) return [];
+    if (SUBJECT_META[key].noLevel) return db;
+    const startBand = startBandFromAbsScore(absScore);
+    const maxBandInDb = Math.max(...db.map((b) => b.band));
+    const targetBand = Math.min(targetBandFor(key), maxBandInDb);
+    const picked = db.filter((b) => b.band >= startBand && b.band <= targetBand);
+    // 既にターゲットを超えている科目でも、仕上げ用に最低1冊は残す
+    if (picked.length === 0) {
+      const fallback = db.filter((b) => b.band === Math.min(startBand, targetBand));
+      picked.push(...fallback.slice(-1));
+    }
+    return picked;
+  }
+
+
+  // ═══════════════════════════════════════════════════════════
+  // 期間
+  // ═══════════════════════════════════════════════════════════
+
+  function getTotalDays() {
+    // 計画確定後は「起点日→本番日」で固定する（保存した計画を開き直しても日付がずれない）
+    if (state.planStart && state.examDateAbs) return daysBetween(state.planStart, state.examDateAbs);
+    if (state.periodMode === 'date') return computeDaysFromDate(state.examDate);
+    return state.weeksDirect ? state.weeksDirect * 7 : null;
+  }
+
+  // 入力内容から本番日を絶対日付に確定する
+  function resolveExamDate() {
+    if (state.periodMode === 'date' && state.examDate) return state.examDate;
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + (state.weeksDirect || 0) * 7);
+    return toDateStr(d);
+  }
+
+  function startDate() {
+    const d = state.planStart ? new Date(state.planStart + 'T00:00:00') : new Date();
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }
+
+  function dateForDayIndex(i) {
+    const d = startDate();
+    d.setDate(d.getDate() + i);
+    return d;
+  }
+
+  function dayKey(i) {
+    return toDateStr(dateForDayIndex(i));
+  }
+
+  function todayIndex() {
+    if (!state.planStart) return 0;
+    const t = new Date(); t.setHours(0, 0, 0, 0);
+    const s = startDate();
+    return Math.round((t - s) / (1000 * 60 * 60 * 24));
+  }
+
+  // ── 保存・復元 ──────────────────────────────────────
+  const SAVED_KEYS = ['school', 'periodMode', 'examDate', 'weeksDirect', 'hoursPerDay',
+    'overallCategory', 'subjectIncluded', 'englishType', 'targets', 'subjectCategory', 'subjectPace', 'bookSelection',
+    'planStart', 'examDateAbs', 'progress', 'doneMap'];
+
+  function savePlan() {
+    try {
+      const data = {};
+      SAVED_KEYS.forEach((k) => { data[k] = state[k]; });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ v: 1, data }));
+    } catch (e) { /* プライベートブラウズ等で保存できない場合は黙って諦める */ }
+  }
+
+  function loadPlan() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.data || !parsed.data.planStart) return false;
+      Object.assign(state, parsed.data);
+      return true;
+    } catch (e) { return false; }
+  }
+
+  function clearPlan() {
+    try { localStorage.removeItem(STORAGE_KEY); } catch (e) { /* noop */ }
+  }
+
+
+
+  // 対象科目の一覧
+  function activeSubjectKeys() {
+    return Object.keys(SUBJECT_META).filter((k) => state.subjectIncluded[k]);
+  }
+
+  function subjectLabelFor(k) {
+    if (k === 'english') return `英語（${ENGLISH_TYPE_LABEL[state.englishType]}）`;
+    return SUBJECT_META[k].label;
+  }
+
+  function subjectMetaText(key) {
+    if (SUBJECT_META[key] && SUBJECT_META[key].noLevel) return '回数で練習';
+    return `${BAND_LABEL[Math.min(targetBandFor(key), 3)]}レベルまで`;
+  }
+
+  function paceFor(k) {
+    return state.subjectPace[k] || { ...DEFAULT_PACE };
+  }
+
+  // 志望校の出題科目と今のレベルから、やるべき参考書の候補を組み立てる（編集画面の初期値）
+  function buildCandidateBooks() {
+    const out = {};
+    activeSubjectKeys().forEach((k) => {
+      const abs = getSubjectAbsScore(k);
+      out[k] = {
+        label: subjectLabelFor(k),
+        abs,
+        books: booksForSubject(k, abs).map((b) => ({ ...b, enabled: true })),
+      };
+    });
+    return out;
+  }
+
+  function buildPlan() {
+    const totalDays = getTotalDays();
+    const pastExamDays = pastExamDaysFor(totalDays);
+    const studyDays = Math.max(1, totalDays - pastExamDays);
+    const selection = state.bookSelection || buildCandidateBooks();
+
+    const subjects = Object.keys(selection).map((k) => {
+      const entry = selection[k];
+      const picked = entry.books.filter((b) => b.enabled);
+      const pace = paceFor(k);
+      // 小論文・面接は過去問期間を作らず、本番直前まで練習を続ける
+      const schedule = buildSubjectSchedule({
+        picked, pace, studyDays, pastExamDays, totalDays, subjectKey: k, doneMap: state.doneMap,
+        pastExamBooks: SUBJECT_META[k].noPastExam ? [] : [pastExamBook(entry.label)],
+      });
+      return { key: k, label: entry.label, abs: entry.abs, pace, ...schedule };
+    });
+
+    // 1日ごとの負荷（分）
+    const dailyMinutes = new Array(totalDays).fill(0);
+    for (let d = 0; d < totalDays; d++) {
+      subjects.forEach((s) => {
+        s.plan[d].forEach((t) => {
+          dailyMinutes[d] += t.isReview ? t.minutes : (t.to - t.from + 1) * t.book.min;
+        });
+      });
+    }
+    const requiredMinutes = subjects.reduce((a, s) => a + s.totalMinutes, 0);
+    const avgMinutes = requiredMinutes / totalDays;
+    // 予備日（何も割り当てのない日）を除いた「実際に勉強する日」の平均。判定はこちらを使う
+    const workingDays = dailyMinutes.filter((m) => m > 0);
+    const workingAvgMinutes = workingDays.length ? workingDays.reduce((a, b) => a + b, 0) / workingDays.length : 0;
+
+    return { totalDays, studyDays, pastExamDays, subjects, dailyMinutes, requiredMinutes, avgMinutes, workingAvgMinutes, workingDayCount: workingDays.length };
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 入力UI
+  // ═══════════════════════════════════════════════════════════
+  function wireSeg(containerId, onChange) {
+    const el = $(containerId);
+    el.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        el.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        onChange(btn.dataset.val);
+      });
+    });
+  }
+
+  // 大学を選ぶと出題科目・英語の形式・科目ごとの到達レベルを自動で決める（募集要項で確認する前提の初期値）
+  function applySchool(name) {
+    const d = SCHOOL_DB[name];
+    state.school = `${name} 医学部（学士編入）`;
+    Object.keys(state.subjectIncluded).forEach((k) => { state.subjectIncluded[k] = false; });
+    const targets = {};
+    Object.entries(d.subj).forEach(([k, mark]) => {
+      state.subjectIncluded[k] = true;
+      targets[k] = (d.targetOverride && d.targetOverride[k] != null) ? d.targetOverride[k] : targetFromMark(k, mark);
+    });
+    if (d.english) {
+      state.subjectIncluded.english = true;
+      state.englishType = d.english;
+      targets.english = 2;
+    }
+    state.subjectIncluded.essay = !!d.essay;
+    state.subjectIncluded.interview = true;
+    state.targets = targets;
+
+    const subjText = Object.entries(d.subj).map(([k, mark]) => `${SUBJECT_META[k].label}${mark}`).join('・');
+    const englishText = d.english ? (d.englishNote || ENGLISH_TYPE_LABEL[d.english]) : 'なし';
+    $('school-info').innerHTML =
+      `<b>${name}</b>（${d.kind}）　筆記試験：例年<b>${d.month}月</b>ごろ`
+      + `<br>学科：${subjText}（◎主要 ○出題あり △一部）`
+      + `<br>英語：${englishText}　小論文：${d.essay ? 'あり' : 'なし'}　面接：あり`
+      + (d.note ? `<br>⚠ ${d.note}` : '')
+      + '<br>2026年実施試験の情報をもとにした初期値です。<b>必ず最新の募集要項で確認し、「科目」の画面で直してください。</b>';
+    $('school-info').classList.remove('hidden');
+    renderSubjectList();
+    renderPaceList();
+  }
+
+  function renderSchoolSelect() {
+    const sel = $('school-select');
+    sel.innerHTML = '<option value="">選択してください</option>'
+      + Object.keys(SCHOOL_DB).map((u) => `<option value="${u}">${u}（${SCHOOL_DB[u].kind}・例年${SCHOOL_DB[u].month}月）</option>`).join('')
+      + '<option value="__free__">一覧にない（自分で入力）</option>';
+    sel.addEventListener('change', () => {
+      const v = sel.value;
+      $('school-free-field').classList.toggle('hidden', v !== '__free__');
+      if (v !== '__free__' && v) { applySchool(v); return; }
+      $('school-info').classList.add('hidden');
+      state.targets = {};
+      state.school = v === '__free__' ? $('school-input').value : '';
+    });
+  }
+  renderSchoolSelect();
+  wireSeg('period-mode-seg', (val) => {
+    state.periodMode = val;
+    $('period-date-field').classList.toggle('hidden', val !== 'date');
+    $('period-weeks-field').classList.toggle('hidden', val !== 'weeks');
+    updatePeriodHint();
+  });
+
+  // 科目ごとの「週に何日進む・何日復習するか」
+  function renderPaceList() {
+    const wrap = $('pace-list');
+    wrap.innerHTML = '';
+    const keys = activeSubjectKeys();
+    if (!keys.length) {
+      wrap.innerHTML = '<div class="hint" style="margin:0">科目を1つ以上選ぶとここに表示されます。</div>';
+      return;
+    }
+    keys.forEach((k) => {
+      const pace = paceFor(k);
+      const spare = Math.max(0, 7 - pace.advance - pace.review);
+      const row = document.createElement('div');
+      row.className = 'subject-row';
+      row.innerHTML = `
+        <span class="name">${subjectLabelFor(k)}</span>
+        <div class="row-controls">
+          <label class="include-toggle">進む<input type="number" class="pace-input pace-advance" min="1" max="7" value="${pace.advance}" />日</label>
+          <label class="include-toggle">復習<input type="number" class="pace-input pace-review" min="0" max="6" value="${pace.review}" />日</label>
+          <span class="include-toggle">予備${spare}日</span>
+        </div>`;
+      wrap.appendChild(row);
+      const adv = row.querySelector('.pace-advance');
+      const rev = row.querySelector('.pace-review');
+      const onChange = () => {
+        const a = clamp(parseInt(adv.value, 10) || 1, 1, 7);
+        const r = clamp(parseInt(rev.value, 10) || 0, 0, 7 - a);
+        state.subjectPace[k] = { advance: a, review: r };
+        renderPaceList();
+      };
+      adv.addEventListener('change', onChange);
+      rev.addEventListener('change', onChange);
+    });
+  }
+  wireSeg('level-category-seg', (val) => { state.overallCategory = val; });
+
+  $('school-input').addEventListener('input', (e) => { state.school = e.target.value; });
+  $('hours-input').addEventListener('input', (e) => {
+    state.hoursPerDay = parseFloat(e.target.value) || 0;
+  });
+  $('exam-date-input').addEventListener('change', (e) => { state.examDate = e.target.value; updatePeriodHint(); });
+  $('weeks-input').addEventListener('input', (e) => {
+    state.weeksDirect = parseInt(e.target.value, 10) || null;
+    updatePeriodHint();
+  });
+  $('exam-date-input').min = todayStr();
+
+  function updatePeriodHint() {
+    const days = getTotalDays();
+    $('period-hint').textContent = days ? `本番まで ${days} 日（約${Math.round(days / 7)}週間）` : '';
+  }
+
+  function renderSubjectList() {
+    $('subject-mode-hint').textContent = '各科目について、自分の中での得意・苦手を選んでください。';
+    const wrap = $('subject-list');
+    wrap.innerHTML = '';
+    Object.keys(SUBJECT_META).forEach((key) => {
+      const meta = SUBJECT_META[key];
+      const included = state.subjectIncluded[key];
+      const row = document.createElement('div');
+      row.className = 'subject-row';
+      row.dataset.key = key;
+
+      let controlsHtml = `<label class="include-toggle"><input type="checkbox" class="include-check" ${included ? 'checked' : ''}/> 含める</label>`;
+      if (included && key === 'english') {
+        controlsHtml += `<select class="english-type-select">${Object.entries(ENGLISH_TYPE_LABEL).map(([val, label]) => `<option value="${val}" ${state.englishType === val ? 'selected' : ''}>${label}</option>`).join('')}</select>`;
+      }
+      if (included && !meta.noLevel) {
+        const options = [['weak', '苦手'], ['normal', '普通'], ['strong', '得意']];
+        controlsHtml += `<div class="seg level-seg">${options.map(([val, label]) => `<button type="button" data-val="${val}" class="${state.subjectCategory[key] === val ? 'active' : ''}">${label}</button>`).join('')}</div>`;
+      }
+
+      row.innerHTML = `<span class="name">${meta.label}</span><div class="row-controls">${controlsHtml}</div>`;
+      wrap.appendChild(row);
+
+      row.querySelector('.include-check').addEventListener('change', (e) => { state.subjectIncluded[key] = e.target.checked; renderSubjectList(); renderPaceList(); });
+      const englishTypeEl = row.querySelector('.english-type-select');
+      if (englishTypeEl) englishTypeEl.addEventListener('change', (e) => { state.englishType = e.target.value; renderPaceList(); });
+      const levelSeg = row.querySelector('.level-seg');
+      if (levelSeg) {
+        levelSeg.querySelectorAll('button').forEach((btn) => {
+          btn.addEventListener('click', () => {
+            levelSeg.querySelectorAll('button').forEach((b) => b.classList.remove('active'));
+            btn.classList.add('active');
+            state.subjectCategory[key] = btn.dataset.val;
+          });
+        });
+      }
+    });
+  }
+  renderSubjectList();
+  renderPaceList();
+
+  // ═══════════════════════════════════════════════════════════
+  // 参考書リスト編集画面
+  // ═══════════════════════════════════════════════════════════
+  function renderBookEditor() {
+    const wrap = $('book-editor');
+    wrap.innerHTML = '';
+    const sel = state.bookSelection;
+    $('books-meta').textContent = `医学部学士編入・${state.school || '志望校未選択'}`;
+
+    Object.keys(sel).forEach((k) => {
+      const entry = sel[k];
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="sb-head">
+          <span class="sb-name">${entry.label}</span>
+          <span class="sb-meta">${subjectMetaText(k)}</span>
+        </div>
+        <div class="editor-books"></div>
+        <button type="button" class="add-book-btn">＋ 参考書を追加</button>
+        <div class="add-book-form hidden">
+          <input type="text" class="nb-title" placeholder="参考書名" />
+          <div class="nb-row">
+            <input type="number" class="nb-units" placeholder="総量" min="1" />
+            <input type="text" class="nb-unit" placeholder="単位（問・章など）" />
+            <input type="number" class="nb-min" placeholder="1単位の分数" min="1" />
+          </div>
+          <div class="nb-row">
+            <select class="nb-track">
+              <option value="main">順番に進める（メイン）</option>
+              <option value="memorize">毎日並行（暗記系）</option>
+            </select>
+            <button type="button" class="nb-add">追加する</button>
+          </div>
+        </div>`;
+
+      const booksWrap = card.querySelector('.editor-books');
+      const renderBooks = () => {
+        booksWrap.innerHTML = '';
+        entry.books.forEach((b, i) => {
+          const line = document.createElement('div');
+          line.className = 'editor-line';
+          line.innerHTML = `
+            <label class="editor-check"><input type="checkbox" ${b.enabled ? 'checked' : ''} /></label>
+            <div class="editor-main">
+              <div class="editor-title">
+                <span class="band-tag">${BAND_LABEL[b.band]}</span>
+                <span>${b.title}</span>
+                ${b.track === 'memorize' ? '<span class="tiny-tag">毎日並行</span>' : ''}
+                ${b.cycles > 1 ? `<span class="tiny-tag">${b.cycles}周</span>` : ''}
+              </div>
+              <div class="editor-amount">
+                <input type="number" class="ed-units" min="1" value="${b.units}" /> ${b.unitLabel}
+                <span class="ed-sep">/ 1${b.unitLabel}あたり</span>
+                <input type="number" class="ed-min" min="1" value="${b.min}" /> 分
+              </div>
+            </div>`;
+          booksWrap.appendChild(line);
+          line.querySelector('input[type=checkbox]').addEventListener('change', (e) => { b.enabled = e.target.checked; });
+          line.querySelector('.ed-units').addEventListener('input', (e) => { b.units = Math.max(1, parseInt(e.target.value, 10) || 1); });
+          line.querySelector('.ed-min').addEventListener('input', (e) => { b.min = Math.max(1, parseInt(e.target.value, 10) || 1); });
+        });
+      };
+      renderBooks();
+
+      const form = card.querySelector('.add-book-form');
+      card.querySelector('.add-book-btn').addEventListener('click', () => form.classList.toggle('hidden'));
+      card.querySelector('.nb-add').addEventListener('click', () => {
+        const title = card.querySelector('.nb-title').value.trim();
+        const units = parseInt(card.querySelector('.nb-units').value, 10);
+        const unitLabel = card.querySelector('.nb-unit').value.trim() || '回';
+        const min = parseInt(card.querySelector('.nb-min').value, 10);
+        if (!title || !units || !min) { alert('参考書名・総量・1単位あたりの分数を入力してください。'); return; }
+        entry.books.push({
+          title, units, unitLabel, min,
+          band: targetBandFor(k),
+          track: card.querySelector('.nb-track').value,
+          enabled: true,
+        });
+        card.querySelector('.nb-title').value = '';
+        card.querySelector('.nb-units').value = '';
+        card.querySelector('.nb-unit').value = '';
+        card.querySelector('.nb-min').value = '';
+        form.classList.add('hidden');
+        renderBooks();
+      });
+
+      wrap.appendChild(card);
+    });
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 結果描画
+  // ═══════════════════════════════════════════════════════════
+  function fmtHours(min) {
+    const h = min / 60;
+    return h >= 10 ? h.toFixed(1) : h.toFixed(1);
+  }
+
+  const VERDICT_ICON = {
+    ok: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    tight: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    ng: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke-width="1.5"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>',
+  };
+
+  function renderVerdict(plan) {
+    const wrap = $('verdict-wrap');
+    const availMin = state.hoursPerDay * 60;
+    const ratio = plan.workingAvgMinutes / (availMin || 1);
+    let cls, statusLabel, title, body;
+    if (ratio <= 0.85) {
+      cls = 'ok'; statusLabel = 'STATUS: OK';
+      title = '間に合う見込みです';
+      body = '今の設定なら、確保できる時間の範囲でこの参考書リストを終えられます。余裕分は過去問演習や苦手分野の追加演習に回せます。';
+    } else if (ratio <= 1.15) {
+      cls = 'tight'; statusLabel = 'STATUS: TIGHT';
+      title = 'ぎりぎり間に合う計算です';
+      body = '休んだ日の遅れを取り戻す余地がほとんどありません。勉強時間を増やすか、参考書の数・科目数・復習日の配分を見直すと安全です。';
+    } else {
+      cls = 'ng'; statusLabel = 'STATUS: OVER';
+      title = 'このままでは終わりません';
+      body = '必要な時間が確保できる時間を上回っています。①1日の勉強時間を増やす ②参考書を減らす（前の画面でチェックを外す） ③科目を減らす ④週に進む日を増やす ⑤参考書の分量を実物に合わせて調整する、のいずれかが必要です。';
+    }
+    wrap.innerHTML = `
+      <div class="verdict ${cls}">
+        <div class="v-head">${VERDICT_ICON[cls]}<span class="v-title">${statusLabel}</span></div>
+        <div class="v-body"><b style="color:var(--text)">${title}</b><br>${body}</div>
+        <div class="v-nums">
+          <span><span class="n-label">AVG/DAY</span><span class="n-val">${fmtHours(plan.workingAvgMinutes)}h</span></span>
+          <span><span class="n-label">CAPACITY</span><span class="n-val">${state.hoursPerDay}h</span></span>
+          <span><span class="n-label">TOTAL</span><span class="n-val">${Math.round(plan.requiredMinutes / 60)}h</span></span>
+        </div>
+        <div class="v-sub">実際に勉強する日 ${plan.workingDayCount}日 / 全${plan.totalDays}日（残りは予備日）</div>
+      </div>`;
+  }
+
+  function renderBookList(plan) {
+    const wrap = $('book-list');
+    wrap.innerHTML = '';
+    plan.subjects.forEach((s) => {
+      const block = document.createElement('div');
+      block.className = 'subject-block';
+      const subjTotalHours = Math.round(s.totalMinutes / 60);
+      const bookCount = new Set(s.books.map((b) => b.title)).size;
+      block.innerHTML = `
+        <div class="sb-head">
+          <span class="sb-name">${s.label}</span>
+          <span class="sb-meta">${subjectMetaText(s.key)}<br>${bookCount}冊・計${subjTotalHours}時間</span>
+        </div>`;
+
+      const groups = [
+        { key: 'memorize', label: '毎日並行して進める（暗記系）', items: s.spans.filter((sp) => sp.book.track === 'memorize') },
+        { key: 'main', label: '順番に1冊ずつ仕上げる', items: s.spans.filter((sp) => sp.book.track !== 'memorize') },
+      ];
+      groups.forEach((g) => {
+        if (!g.items.length) return;
+        const head = document.createElement('div');
+        head.className = 'track-label';
+        head.textContent = g.label;
+        block.appendChild(head);
+        g.items.forEach((sp) => {
+          const b = sp.book;
+          const perDay = b.units / sp.days;
+          const line = document.createElement('div');
+          line.className = 'book-line';
+          line.innerHTML = `
+            <span class="band-tag">${b.isPastExam ? '仕上げ' : BAND_LABEL[b.band]}</span>
+            <span class="b-title">${b.title}${b.cycleLabel}</span>
+            <span class="b-amount">全${b.units}${b.unitLabel} / 1日 ${perDay < 1 ? perDay.toFixed(2) : perDay.toFixed(1)}${b.unitLabel}</span>
+            <span class="b-span">${formatDate(dateForDayIndex(sp.startDay))}〜${formatDate(dateForDayIndex(sp.endDay))}</span>`;
+          block.appendChild(line);
+        });
+      });
+      wrap.appendChild(block);
+    });
+  }
+
+  function renderCalendar(plan) {
+    const wrap = $('calendar');
+    wrap.innerHTML = '';
+    const weeks = Math.ceil(plan.totalDays / 7);
+    $('calendar-hint').textContent = `本番まで${plan.totalDays}日ぶんの計画です。週をタップすると日毎の内訳が開きます。`;
+
+    for (let w = 0; w < weeks; w++) {
+      const startIdx = w * 7;
+      const endIdx = Math.min(startIdx + 6, plan.totalDays - 1);
+      let weekMinutes = 0;
+      for (let d = startIdx; d <= endIdx; d++) weekMinutes += plan.dailyMinutes[d];
+
+      const card = document.createElement('div');
+      card.className = 'week-card';
+      const head = document.createElement('button');
+      head.className = 'week-head';
+      head.innerHTML = `
+        <span>第${w + 1}週：${formatDate(dateForDayIndex(startIdx))} 〜 ${formatDate(dateForDayIndex(endIdx))}</span>
+        <span class="w-load">1日平均 ${fmtHours(weekMinutes / (endIdx - startIdx + 1))}時間</span>`;
+      card.appendChild(head);
+
+      const body = document.createElement('div');
+      body.className = w === 0 ? '' : 'hidden';
+      for (let d = startIdx; d <= endIdx; d++) {
+        const row = document.createElement('div');
+        row.className = 'day-row';
+        const tasks = plan.subjects
+          .map((s) => {
+            const items = s.plan[d];
+            if (!items.length) return null;
+            const lines = items.map((t) => {
+              if (t.isReview) {
+                const detail = t.items.map((i) => {
+                  const r = i.from === i.to ? `${i.from}` : `${i.from}〜${i.to}`;
+                  return `${i.book.title}${i.book.cycleLabel} ${r}${i.book.unitLabel}`;
+                }).join('／');
+                return `<span class="t-item t-review">復習：${detail}</span>`;
+              }
+              const range = t.from === t.to ? `${t.from}` : `${t.from}〜${t.to}`;
+              return `<span class="t-item">${t.book.title}${t.book.cycleLabel} ${range}${t.book.unitLabel}</span>`;
+            }).join('');
+            return `<div class="task"><span class="t-sub">${s.label}</span><span class="t-items">${lines}</span></div>`;
+          })
+          .filter(Boolean);
+        row.innerHTML = `
+          <div class="day-date">${formatDate(dateForDayIndex(d))}（${fmtHours(plan.dailyMinutes[d])}時間）</div>
+          <div class="day-tasks">${tasks.length ? tasks.join('') : '<div class="day-done">この日にやる教材はありません（総復習・過去問の見直しに充てましょう）</div>'}</div>`;
+        body.appendChild(row);
+      }
+      head.addEventListener('click', () => body.classList.toggle('hidden'));
+      card.appendChild(body);
+      wrap.appendChild(card);
+    }
+  }
+
+  function validateInputs() {
+    const totalDays = getTotalDays();
+    if (!totalDays || totalDays < 1) { alert('残り期間を正しく入力してください。'); return false; }
+    if (totalDays > 900) { alert('残り期間が長すぎます（900日以内で入力してください）。'); return false; }
+    if (!state.hoursPerDay || state.hoursPerDay <= 0) { alert('1日の勉強時間を入力してください。'); return false; }
+    if (activeSubjectKeys().length === 0) { alert('対象科目を1つ以上選んでください。'); return false; }
+    return true;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 画面遷移（ボトムナビ4タブ）
+  // ═══════════════════════════════════════════════════════════
+  const SCREEN_IDS = { today: 'screen-today', form: 'screen-form', books: 'screen-books', result: 'screen-result' };
+  const NAV_FOR_SCREEN = { today: 'nav-today', form: 'nav-form', books: 'nav-books', result: 'nav-result' };
+
+  function hasPlan() { return !!state.bookSelection; }
+
+  function updateHeaderStatus() {
+    const el = $('header-status');
+    if (state.school) {
+      const days = getTotalDays();
+      el.textContent = days ? `${state.school} // D-${Math.max(0, days)}` : state.school;
+    } else {
+      el.textContent = '条件を入力してください';
+    }
+  }
+
+  function showScreen(id) {
+    Object.entries(SCREEN_IDS).forEach(([key, sid]) => $(sid).classList.toggle('hidden', sid !== id));
+    Object.entries(NAV_FOR_SCREEN).forEach(([key, nid]) => {
+      $(nid).classList.toggle('active', SCREEN_IDS[key] === id);
+    });
+    updateHeaderStatus();
+    window.scrollTo(0, 0);
+  }
+
+  function goNav(key) {
+    if (key !== 'form' && !hasPlan()) {
+      showScreen('screen-form');
+      showFormStep(0);
+      return;
+    }
+    if (key === 'today') { renderToday(); showScreen('screen-today'); }
+    else if (key === 'result') {
+      const plan = currentPlan || buildPlan();
+      renderResultScreen(plan);
+      showScreen('screen-result');
+    } else if (key === 'books') { showScreen('screen-books'); }
+    else { showScreen('screen-form'); }
+  }
+
+  document.querySelectorAll('.bottom-nav [data-nav]').forEach((btn) => {
+    btn.addEventListener('click', () => goNav(btn.dataset.nav));
+  });
+
+  // ── フォームのステップウィザード ──
+  const FORM_STEPS = ['志望校', '期間・時間', '学力', '科目', '進め方'];
+  let formStep = 0;
+
+  function renderFormStepTabs() {
+    const wrap = $('form-step-tabs');
+    wrap.innerHTML = FORM_STEPS.map((label, i) =>
+      `<button type="button" data-step="${i}">${String(i + 1).padStart(2, '0')} ${label}</button>`
+    ).join('');
+    wrap.querySelectorAll('button').forEach((btn) => {
+      btn.addEventListener('click', () => showFormStep(parseInt(btn.dataset.step, 10)));
+    });
+  }
+  renderFormStepTabs();
+
+  function showFormStep(i) {
+    formStep = clamp(i, 0, FORM_STEPS.length - 1);
+    document.querySelectorAll('.form-step').forEach((el) => {
+      el.classList.toggle('active', parseInt(el.dataset.step, 10) === formStep);
+    });
+    document.querySelectorAll('#form-step-tabs button').forEach((btn) => {
+      btn.classList.toggle('active', parseInt(btn.dataset.step, 10) === formStep);
+    });
+    $('btn-form-prev').disabled = formStep === 0;
+    const isLast = formStep === FORM_STEPS.length - 1;
+    $('btn-form-next').textContent = isLast ? '参考書リストを作る' : '次へ →';
+    $('btn-new-plan').classList.toggle('hidden', !hasPlan());
+    window.scrollTo(0, 0);
+  }
+
+  $('btn-form-prev').addEventListener('click', () => showFormStep(formStep - 1));
+  $('btn-form-next').addEventListener('click', () => {
+    if (formStep < FORM_STEPS.length - 1) { showFormStep(formStep + 1); return; }
+    if (!validateInputs()) return;
+    // 作り直しなので起点日・進捗はリセットする
+    state.planStart = null; state.examDateAbs = null; state.progress = {}; state.doneMap = {};
+    state.bookSelection = buildCandidateBooks();
+    renderBookEditor();
+    showScreen('screen-books');
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // 今日やること・進捗
+  // ═══════════════════════════════════════════════════════════
+  let currentPlan = null;
+
+  function taskLabel(t) {
+    if (t.isReview) {
+      const detail = t.items.map((i) => {
+        const r = i.from === i.to ? `${i.from}` : `${i.from}〜${i.to}`;
+        return `${i.book.title}${i.book.cycleLabel} ${r}${i.book.unitLabel}`;
+      }).join('／');
+      return `復習：${detail}`;
+    }
+    const r = t.from === t.to ? `${t.from}` : `${t.from}〜${t.to}`;
+    return `${t.book.title}${t.book.cycleLabel} ${r}${t.book.unitLabel}`;
+  }
+
+  function renderToday() {
+    currentPlan = buildPlan();
+    const idx = todayIndex();
+    const total = currentPlan.totalDays;
+    const rest = Math.max(0, total - idx);
+    const inRange = idx >= 0 && idx < total;
+
+    $('today-dday').textContent = `D-${rest} // EXAM_DATE ${state.examDateAbs || ''}`;
+    if (inRange) {
+      const d = dateForDayIndex(idx);
+      const dow = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'][d.getDay()];
+      $('today-bigdate').innerHTML = `${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}<span class="dow">_${dow}</span>`;
+    } else {
+      $('today-bigdate').innerHTML = idx < 0 ? '準備中' : 'FIN';
+    }
+
+    // 今日ぶんのタスク完了率（20セグメントのバー）
+    const todayItems = inRange ? currentPlan.subjects.filter((s) => s.plan[idx] && s.plan[idx].length) : [];
+    const key = inRange ? dayKey(idx) : null;
+    const dayProgress = (key && state.progress[key]) || {};
+    const todayDone = todayItems.filter((s) => dayProgress[s.key]).length;
+    const todayTotal = todayItems.length;
+    const todayPct = todayTotal ? Math.round((todayDone / todayTotal) * 100) : 0;
+    const segCount = 20;
+    const filled = Math.round((todayPct / 100) * segCount);
+    $('today-segbar').innerHTML = Array.from({ length: segCount }, (_, i) =>
+      `<div class="seg-cell ${i < filled ? 'filled' : ''}"></div>`
+    ).join('');
+    $('today-segmeta').innerHTML = `<span>PROGRESS ${todayPct}%</span><span>${todayDone}/${todayTotal} DONE</span>`;
+
+    // 進捗サマリ：今日より前に割り当てられたタスク（科目×日）のうち、何件を消化したかで見る。
+    // 今日の分はまだ未着手が当たり前なので分母に入れない
+    let doneTasks = 0;
+    let dueTasks = 0;
+    const lastDay = Math.min(idx, total);
+    for (let d = 0; d < lastDay; d++) {
+      const prog = state.progress[dayKey(d)] || {};
+      currentPlan.subjects.forEach((s) => {
+        if (!s.plan[d] || !s.plan[d].length) return;
+        dueTasks += 1;
+        if (prog[s.key]) doneTasks += 1;
+      });
+    }
+    const behind = dueTasks - doneTasks;
+    if (dueTasks === 0) {
+      $('today-progress').innerHTML = `
+        <div class="verdict ok">
+          <div class="v-head">${VERDICT_ICON.ok}<span class="v-title">READY</span></div>
+          <div class="v-body">下のタスクを終えたらチェックを入れてください。</div>
+        </div>`;
+    } else {
+      const pct = Math.round((doneTasks / dueTasks) * 100);
+      const cls = pct >= 80 ? 'ok' : pct >= 50 ? 'tight' : 'ng';
+      $('today-progress').innerHTML = `
+        <div class="verdict ${cls}">
+          <div class="v-head">${VERDICT_ICON[cls]}<span class="v-title">消化率 ${pct}%</span></div>
+          <div class="v-body">昨日までに割り当てられた${dueTasks}件のうち${doneTasks}件を消化しています。`
+        + (behind > 0 ? `未消化が${behind}件あります。遅れが大きいときは「今日から組み直す」を使ってください。` : '予定どおり進んでいます。')
+        + '</div></div>';
+    }
+
+    const wrap = $('today-tasks');
+    wrap.innerHTML = '';
+    if (idx < 0 || idx >= total) {
+      wrap.innerHTML = '<div class="hint" style="margin:0">今日の割り当てはありません。</div>';
+      return;
+    }
+    let any = false;
+    currentPlan.subjects.forEach((s) => {
+      const items = s.plan[idx];
+      if (!items || !items.length) return;
+      any = true;
+      const row = document.createElement('div');
+      row.className = 'today-row';
+      row.innerHTML = `
+        <label class="today-check"><input type="checkbox" ${dayProgress[s.key] ? 'checked' : ''} /></label>
+        <div class="today-main">
+          <div class="today-subject">${s.label}</div>
+          ${items.map((t) => `<div class="today-task">${taskLabel(t)}</div>`).join('')}
+        </div>`;
+      wrap.appendChild(row);
+      row.querySelector('input').addEventListener('change', (e) => {
+        if (!state.progress[key]) state.progress[key] = {};
+        if (e.target.checked) state.progress[key][s.key] = true;
+        else delete state.progress[key][s.key];
+        if (Object.keys(state.progress[key]).length === 0) delete state.progress[key];
+        savePlan();
+        row.classList.toggle('done', e.target.checked);
+        renderToday();
+      });
+      row.classList.toggle('done', !!dayProgress[s.key]);
+    });
+    if (!any) wrap.innerHTML = '<div class="hint" style="margin:0">今日は予備日です。遅れている分の取り戻しに使いましょう。</div>';
+  }
+
+  // ── 共有用の画像を書き出す（外部ライブラリを使わずCanvasで描く） ──
+  const SHARE_FONT = '"Hiragino Sans", "Yu Gothic UI", sans-serif';
+
+  function shareItems() {
+    const idx = todayIndex();
+    const out = [];
+    if (!currentPlan || idx < 0 || idx >= currentPlan.totalDays) return out;
+    currentPlan.subjects.forEach((s) => {
+      const items = s.plan[idx];
+      if (!items || !items.length) return;
+      out.push({ label: s.label, lines: items.map(taskLabel) });
+    });
+    return out;
+  }
+
+  // 指定幅で折り返した行の配列を返す
+  function wrapText(ctx, text, maxWidth) {
+    const lines = [];
+    let cur = '';
+    for (const ch of text) {
+      if (ctx.measureText(cur + ch).width > maxWidth && cur) { lines.push(cur); cur = ch; }
+      else cur += ch;
+    }
+    if (cur) lines.push(cur);
+    return lines;
+  }
+
+  function drawShareCard() {
+    const W = 1080;
+    const PAD = 72;
+    const blocks = shareItems();
+    const idx = todayIndex();
+    const rest = currentPlan ? Math.max(0, currentPlan.totalDays - idx) : 0;
+
+    // 高さを測るための下書き
+    const probe = document.createElement('canvas').getContext('2d');
+    probe.font = `400 34px ${SHARE_FONT}`;
+    let bodyH = 0;
+    const wrapped = blocks.map((b) => {
+      const ls = b.lines.flatMap((l) => wrapText(probe, l, W - PAD * 2 - 40));
+      bodyH += 56 + ls.length * 48 + 28;
+      return { label: b.label, lines: ls };
+    });
+    const H = Math.max(720, 430 + bodyH + 120);
+
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+
+    ctx.fillStyle = '#0a0c10'; ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = '#12151a'; ctx.fillRect(0, 0, W, 300);
+    ctx.fillStyle = '#39e0c9'; ctx.fillRect(0, 296, W, 4);
+
+    ctx.fillStyle = '#39e0c9';
+    ctx.font = `700 32px ${SHARE_FONT}`;
+    ctx.fillText('今日のノルマ', PAD, 100);
+    ctx.fillStyle = '#e7e9ec';
+    ctx.font = `700 76px ${SHARE_FONT}`;
+    ctx.fillText(idx >= 0 && currentPlan && idx < currentPlan.totalDays ? formatDate(dateForDayIndex(idx)) : '—', PAD, 192);
+    ctx.font = `400 32px ${SHARE_FONT}`;
+    ctx.fillStyle = '#838a95';
+    ctx.fillText(`${state.school || '志望校未設定'}　D-${rest}`, PAD, 250);
+
+    let y = 386;
+    wrapped.forEach((b) => {
+      ctx.fillStyle = '#12151a';
+      const blockH = 40 + b.lines.length * 48 + 24;
+      ctx.fillRect(PAD - 24, y - 48, W - (PAD - 24) * 2, blockH);
+      ctx.fillStyle = '#39e0c9'; ctx.fillRect(PAD - 24, y - 48, 4, blockH);
+      ctx.font = `700 32px ${SHARE_FONT}`;
+      ctx.fillText(b.label, PAD, y - 6);
+      ctx.fillStyle = '#e7e9ec';
+      ctx.font = `400 32px ${SHARE_FONT}`;
+      b.lines.forEach((l, i) => ctx.fillText(l, PAD, y + 44 + i * 48));
+      y += blockH + 28;
+    });
+
+    if (!wrapped.length) {
+      ctx.fillStyle = '#838a95';
+      ctx.font = `400 36px ${SHARE_FONT}`;
+      ctx.fillText('今日は予備日です。遅れの取り戻しに使いましょう。', PAD, y);
+      y += 60;
+    }
+
+    ctx.fillStyle = '#838a95';
+    ctx.font = `400 26px ${SHARE_FONT}`;
+    ctx.fillText('編入計画（仮）', PAD, H - 56);
+    ctx.fillText('miyu9999.github.io/henyu-plan-maker', PAD + 310, H - 56);
+    return cv;
+  }
+
+  async function shareToday() {
+    const cv = drawShareCard();
+    const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+    if (!blob) { alert('画像を作成できませんでした。'); return; }
+    const fileName = `今日のノルマ_${todayStr()}.png`;
+    const file = new File([blob], fileName, { type: 'image/png' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try { await navigator.share({ files: [file], title: '今日のノルマ' }); return; }
+      catch (e) { /* キャンセル時はダウンロードにフォールバックしない */ if (e && e.name === 'AbortError') return; }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fileName; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+
+  // チェック済みの日からこなした量を集計し、今日を起点に残りを組み直す
+  function reschedule() {
+    const plan = currentPlan || buildPlan();
+    const idx = todayIndex();
+    const done = { ...state.doneMap };
+    Object.keys(state.progress).forEach((k) => {
+      const subjects = state.progress[k];
+      const dayIdx = Math.round((new Date(k + 'T00:00:00') - startDate()) / (1000 * 60 * 60 * 24));
+      if (dayIdx < 0 || dayIdx >= plan.totalDays) return;
+      plan.subjects.forEach((s) => {
+        if (!subjects[s.key]) return;
+        (s.plan[dayIdx] || []).forEach((t) => {
+          if (t.isReview) return;
+          const mapKey = `${s.key}::${t.book.title}${t.book.cycleLabel || ''}`;
+          const amount = t.to - t.from + 1;
+          done[mapKey] = (done[mapKey] || 0) + amount;
+        });
+      });
+    });
+    state.doneMap = done;
+    state.planStart = todayStr();
+    state.progress = {};
+    savePlan();
+    renderToday();
+    alert('今日を起点に、残りの量で計画を組み直しました。');
+  }
+
+  function renderResultScreen(plan) {
+    const levelLabelText = CATEGORY_LABEL[state.overallCategory];
+    $('result-school').textContent = state.school || '志望校未入力';
+    $('result-meta').textContent = `医学部学士編入・現在${levelLabelText}・本番まで${plan.totalDays}日`;
+    renderVerdict(plan);
+    renderBookList(plan);
+    renderCalendar(plan);
+  }
+
+  function generate() {
+    if (!state.planStart) state.planStart = todayStr();
+    if (!state.examDateAbs) state.examDateAbs = resolveExamDate();
+    const plan = buildPlan();
+    currentPlan = plan;
+    savePlan();
+    renderResultScreen(plan);
+    showScreen('screen-result');
+  }
+
+  $('btn-view-plan').addEventListener('click', () => {
+    const plan = currentPlan || buildPlan();
+    renderResultScreen(plan);
+    showScreen('screen-result');
+  });
+  $('btn-share').addEventListener('click', shareToday);
+  $('btn-reschedule').addEventListener('click', reschedule);
+  $('btn-new-plan').addEventListener('click', () => {
+    if (!confirm('今の計画と進捗を破棄して、条件から作り直しますか？')) return;
+    clearPlan();
+    state.planStart = null; state.examDateAbs = null; state.progress = {}; state.doneMap = {}; state.bookSelection = null;
+    showFormStep(0);
+    showScreen('screen-form');
+  });
+  $('btn-generate').addEventListener('click', generate);
+  $('btn-back-form').addEventListener('click', () => { showFormStep(0); showScreen('screen-form'); });
+  $('btn-back-books').addEventListener('click', () => showScreen('screen-books'));
+  $('btn-to-today').addEventListener('click', () => { renderToday(); showScreen('screen-today'); });
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+  }
+
+  // 保存済みの計画があれば「今日やること」から始める
+  showFormStep(0);
+  if (loadPlan()) {
+    renderSubjectList();
+    renderPaceList();
+    renderToday();
+    showScreen('screen-today');
+  } else {
+    showScreen('screen-form');
+  }
+</script>
+</body>
+</html>
